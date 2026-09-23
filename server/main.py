@@ -168,4 +168,51 @@ def get_consistency_metrics():
         "velocity_trend": "up" if last_7_days_count >= prev_7_days_count else "down"
     }
 
+
+@app.get("/stats/mistakes")
+def get_mistake_stats():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT mistake_type, COUNT(*) as count 
+        FROM problems 
+        WHERE mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None'
+        GROUP BY mistake_type 
+        ORDER BY count DESC
+    """)
+    mistake_rows = cursor.fetchall()
+    mistake_distribution = {row[0]: row[1] for row in mistake_rows}
+
+    total_mistakes_logged = sum(mistake_distribution.values())
+    top_mistake_reason = mistake_rows[0][0] if mistake_rows else "None"
+
+    cursor.execute("""
+        SELECT topic, COUNT(*) as total, AVG(confidence) as avg_conf,
+               SUM(CASE WHEN mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None' THEN 1 ELSE 0 END) as mistake_count
+        FROM problems
+        GROUP BY topic
+        ORDER BY avg_conf ASC, mistake_count DESC
+    """)
+    topic_rows = cursor.fetchall()
+
+    weak_topics = []
+    for r in topic_rows:
+        weak_topics.append({
+            "topic": r[0],
+            "total_problems": r[1],
+            "avg_confidence": round(r[2], 2) if r[2] is not None else 0.0,
+            "mistake_count": r[3]
+        })
+
+    conn.close()
+
+    return {
+        "mistake_distribution": mistake_distribution,
+        "total_mistakes_logged": total_mistakes_logged,
+        "top_mistake_reason": top_mistake_reason,
+        "weak_topics": weak_topics
+    }
+
+
 
