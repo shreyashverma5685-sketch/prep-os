@@ -1,33 +1,41 @@
 import { useState, useEffect } from 'react';
 import LogForm from './components/LogForm';
 import ProblemList from './components/ProblemList';
+import StatsSummary from './components/StatsSummary';
 import './index.css';
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
 function App() {
   const [problems, setProblems] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProblems = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/problems`);
-      if (res.ok) {
-        const data = await res.json();
-        setProblems(data);
-      } else {
-        console.error('Failed to fetch problems:', res.statusText);
+      const [probRes, summaryRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/problems`),
+        fetch(`${API_BASE_URL}/stats/summary`)
+      ]);
+
+      if (probRes.ok) {
+        const probData = await probRes.json();
+        setProblems(probData);
+      }
+      if (summaryRes.ok) {
+        const summaryData = await summaryRes.json();
+        setSummary(summaryData);
       }
     } catch (err) {
-      console.error('Error fetching problems:', err);
+      console.error('Error fetching dashboard data:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchProblems();
+    fetchData();
   }, []);
 
   const handleProblemAdded = async (formData) => {
@@ -38,7 +46,7 @@ function App() {
         body: JSON.stringify(formData)
       });
       if (res.ok) {
-        await fetchProblems();
+        await fetchData();
       } else {
         alert('Failed to save problem to server.');
       }
@@ -62,6 +70,7 @@ function App() {
       </header>
 
       <main className="dashboard-layout">
+        <StatsSummary summary={summary} loading={loading} />
         <LogForm onProblemAdded={handleProblemAdded} />
         <ProblemList problems={problems} loading={loading} />
       </main>
