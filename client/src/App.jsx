@@ -1,13 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LogForm from './components/LogForm';
+import ProblemList from './components/ProblemList';
 import './index.css';
 
-function App() {
-  const [lastLogged, setLastLogged] = useState(null);
+const API_BASE_URL = 'http://127.0.0.1:8000';
 
-  const handleProblemAdded = (formData) => {
-    console.log('Logged problem submission (Sub-phase 1c):', formData);
-    setLastLogged(formData);
+function App() {
+  const [problems, setProblems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProblems = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE_URL}/problems`);
+      if (res.ok) {
+        const data = await res.json();
+        setProblems(data);
+      } else {
+        console.error('Failed to fetch problems:', res.statusText);
+      }
+    } catch (err) {
+      console.error('Error fetching problems:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProblems();
+  }, []);
+
+  const handleProblemAdded = async (formData) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/problems`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) {
+        await fetchProblems();
+      } else {
+        alert('Failed to save problem to server.');
+      }
+    } catch (err) {
+      console.error('Error adding problem:', err);
+      alert('Network error submitting problem.');
+    }
   };
 
   return (
@@ -25,15 +63,7 @@ function App() {
 
       <main className="dashboard-layout">
         <LogForm onProblemAdded={handleProblemAdded} />
-
-        {lastLogged && (
-          <div className="card">
-            <h2>Logged Submission Preview (1c Verification)</h2>
-            <pre style={{ background: '#0f172a', padding: '16px', borderRadius: '8px', color: '#10b981', overflowX: 'auto' }}>
-              {JSON.stringify(lastLogged, null, 2)}
-            </pre>
-          </div>
-        )}
+        <ProblemList problems={problems} loading={loading} />
       </main>
     </div>
   );
