@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import LogForm from './components/LogForm';
 import ProblemList from './components/ProblemList';
 import StatsSummary from './components/StatsSummary';
+import ConsistencyCard from './components/ConsistencyCard';
 import './index.css';
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -9,24 +10,21 @@ const API_BASE_URL = 'http://127.0.0.1:8000';
 function App() {
   const [problems, setProblems] = useState([]);
   const [summary, setSummary] = useState(null);
+  const [consistency, setConsistency] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [probRes, summaryRes] = await Promise.all([
+      const [probRes, summaryRes, consistencyRes] = await Promise.all([
         fetch(`${API_BASE_URL}/problems`),
-        fetch(`${API_BASE_URL}/stats/summary`)
+        fetch(`${API_BASE_URL}/stats/summary`),
+        fetch(`${API_BASE_URL}/stats/consistency`)
       ]);
 
-      if (probRes.ok) {
-        const probData = await probRes.json();
-        setProblems(probData);
-      }
-      if (summaryRes.ok) {
-        const summaryData = await summaryRes.json();
-        setSummary(summaryData);
-      }
+      if (probRes.ok) setProblems(await probRes.json());
+      if (summaryRes.ok) setSummary(await summaryRes.json());
+      if (consistencyRes.ok) setConsistency(await consistencyRes.json());
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -70,7 +68,10 @@ function App() {
       </header>
 
       <main className="dashboard-layout">
-        <StatsSummary summary={summary} loading={loading} />
+        <div className="grid-2col">
+          <StatsSummary summary={summary} loading={loading} />
+          <ConsistencyCard consistency={consistency} loading={loading} />
+        </div>
         <LogForm onProblemAdded={handleProblemAdded} />
         <ProblemList problems={problems} loading={loading} />
       </main>

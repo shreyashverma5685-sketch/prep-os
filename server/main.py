@@ -96,4 +96,76 @@ def get_stats_summary():
         "avg_time_min": avg_time_min,
         "status_breakdown": status_breakdown
     }
+
+
+@app.get("/stats/consistency")
+def get_consistency_metrics():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT DISTINCT date_logged FROM problems WHERE date_logged IS NOT NULL ORDER BY date_logged ASC")
+    dates = [r[0] for r in cursor.fetchall()]
+
+    total_active_days = len(dates)
+    current_streak = 0
+    longest_streak = 0
+
+    if dates:
+        from datetime import datetime, timedelta
+
+        parsed_dates = []
+        for d_str in dates:
+            try:
+                parsed_dates.append(datetime.strptime(str(d_str).split('T')[0].split(' ')[0], '%Y-%m-%d').date())
+            except Exception:
+                pass
+
+        parsed_dates = sorted(list(set(parsed_dates)))
+
+        if parsed_dates:
+            temp_streak = 1
+            max_s = 1
+            for i in range(1, len(parsed_dates)):
+                if parsed_dates[i] == parsed_dates[i-1] + timedelta(days=1):
+                    temp_streak += 1
+                elif parsed_dates[i] > parsed_dates[i-1] + timedelta(days=1):
+                    temp_streak = 1
+                max_s = max(max_s, temp_streak)
+            longest_streak = max_s
+
+            today = datetime.now().date()
+            yesterday = today - timedelta(days=1)
+
+            if parsed_dates[-1] in (today, yesterday):
+                curr = 1
+                idx = len(parsed_dates) - 1
+                while idx > 0 and parsed_dates[idx] == parsed_dates[idx-1] + timedelta(days=1):
+                    curr += 1
+                    idx -= 1
+                current_streak = curr
+            else:
+                current_streak = 0
+
+    from datetime import datetime, timedelta
+    now_date = datetime.now().date()
+    seven_days_ago = (now_date - timedelta(days=7)).strftime('%Y-%m-%d')
+    fourteen_days_ago = (now_date - timedelta(days=14)).strftime('%Y-%m-%d')
+
+    cursor.execute("SELECT COUNT(*) FROM problems WHERE date_logged >= ?", (seven_days_ago,))
+    last_7_days_count = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM problems WHERE date_logged >= ? AND date_logged < ?", (fourteen_days_ago, seven_days_ago))
+    prev_7_days_count = cursor.fetchone()[0]
+
+    conn.close()
+
+    return {
+        "current_streak": current_streak,
+        "longest_streak": longest_streak,
+        "total_active_days": total_active_days,
+        "last_7_days_count": last_7_days_count,
+        "prev_7_days_count": prev_7_days_count,
+        "velocity_trend": "up" if last_7_days_count >= prev_7_days_count else "down"
+    }
+
 
