@@ -1,9 +1,14 @@
-from fastapi import FastAPI
+﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
 from db import get_connection, init_db
 from models import ProblemCreate, Problem
-from recommender import calculate_2factor_topic_score, calculate_2factor_problem_score
+from recommender import (
+    calculate_2factor_topic_score,
+    calculate_2factor_problem_score,
+    calculate_5factor_topic_score,
+    calculate_5factor_problem_score
+)
 
 app = FastAPI()
 
@@ -49,7 +54,7 @@ def create_problem(problem: ProblemCreate):
 def list_problems():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM problems ORDER BV id DESC")
+    cursor.execute("SELECT * FROM problems ORDER BY id DESC")
     rows = cursor.fetchall()
     conn.close()
 
@@ -75,7 +80,7 @@ def get_stats_summary():
     topic_rows = cursor.fetchall()
     topic_breakdown = {row[0]: row[1] for row in topic_rows}
 
-    cursor.execute("SELECT AVG(confidence) FROM problems WHERE confidence IS NOT NULLB")
+    cursor.execute("SELECT AVG(confidence) FROM problems WHERE confidence IS NOT NULL")
     avg_conf_row = cursor.fetchone()[0]
     avg_confidence = round(avg_conf_row, 2) if avg_conf_row is not None else 0.0
 
@@ -153,7 +158,7 @@ def get_consistency_metrics():
     last_7_days_count = cursor.fetchone()[0]
 
     cursor.execute("SELECT COUNT(*) FROM problems WHERE date_logged >= ? AND date_logged < ?", (fourteen_days_ago, seven_days_ago))
-    prev_7_days_count = cursor.fetchall()[0]
+    prev_7_days_count = cursor.fetchone()[0]
 
     conn.close()
 
@@ -175,7 +180,7 @@ def get_mistake_stats():
     cursor.execute("""
         SELECT mistake_type, COUNT(*) as count 
         FROM problems 
-        WHERE mistake_type IS NOT NULLAND mistake_type != '' AND mistake_type != 'None'
+        WHERE mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None'
         GROUP BY mistake_type 
         ORDER BY count DESC
     """)
@@ -187,12 +192,12 @@ def get_mistake_stats():
 
     cursor.execute("""
         SELECT topic, COUNT(*) as total, AVG(confidence) as avg_conf,
-               SUM( CASE WHEN mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None' THEN 1 ELSE 0 END) as mistake_count
+               SUM(CASE WHEN mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None' THEN 1 ELSE 0 END) as mistake_count
         FROM problems
         GROUP BY topic
         ORDER BY (avg_conf IS NULL) ASC, avg_conf ASC, mistake_count DESC
     """)
-    topic_rows = cursor.fetchone()
+    topic_rows = cursor.fetchall()
 
     weak_topics = []
     for r in topic_rows:
@@ -220,7 +225,7 @@ def get_two_factor_weakness():
 
     cursor.execute("""
         SELECT topic, COUNT(*) as total, AVG(confidence) as avg_conf,
-               SUM( CASE WHEN mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None' THEN 1 ELSE 0 END) as mistake_count
+               SUM(CASE WHEN mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None' THEN 1 ELSE 0 END) as mistake_count
         FROM problems
         GROUP BY topic
     """)
@@ -244,4 +249,67 @@ def get_two_factor_weakness():
         })
 
     topic_scores.sort(key=lambda x: x["weakness_score"], reverse=True)
+    return {"topics": topic_scores}
+
+
+@app.get("/stats/weakness-5factor")
+def get_five_factor_weakness():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT topic, 
+               COUNT(*) as total, 
+               AVG(confidence) as avg_conf,
+               SUM(CASE WHEN mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None' THEN 1 ELSE 0 END) as mistake_count,
+               AVG(time_taken_min) as avg_time,
+               AVG(attempts) as avg_attempts,
+               AVG(hints_used) as avg_hints,
+               MAX(date_logged) as last_logged
+        FROM problems
+        GROUP BY topic
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+
+    today = datetime.now().date()
+    topic_scores = []
+    for r in rows:
+        topic_name = r[0]
+        total = r[1]
+        avg_conf = r[2]
+        mistake_cnt = r[3]
+        avg_time = r[4] or 0.0
+        avg_attempts = r[5] or 1.0
+        avg_hints = r[6] or 0.0
+        last_logged_str = r[7]
+
+        days_since = 0
+        if last_logged_str:
+            try:
+                ld = datetime.strptime(str(last_logged_str).split('T')[0].split(' ')[0], '%Y-%m-%d').date()
+                days_since = (today - ld).days
+            except Exception:
+                days_since = 0
+
+        score = calculate_5factor_topic_score(
+            avg_confidence=avg_conf,
+            mistake_count=mistake_cnt,
+            total_problems=total,
+            avg_time_min=avg_time,
+            avg_attempts=avg_attempts,
+            avg_hints=avg_hints,
+            days_since_practice=days_since
+        )
+        topic_scores.append({
+            "topic": topic_name,
+            "total_problems": total,
+            "avg_confidence": round(avg_conf, 2) if avg_conf is not None else None,
+            "mistake_count": mistake_cnt,
+            "avg_time_min": round(avg_time, 1),
+            "days_since_practice": days_since,
+            "weakness_score_5factor": score
+        })
+
+    topic_scores.sort(key=lambda x: x["weakness_score_5factor"], reverse=True)
     return {"topics": topic_scores}
