@@ -192,7 +192,7 @@ def get_mistake_stats():
                SUM(CASE WHEN mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None' THEN 1 ELSE 0 END) as mistake_count
         FROM problems
         GROUP BY topic
-        ORDER BY avg_conf ASC, mistake_count DESC
+        ORDER BY (avg_conf IS NULL) ASC, avg_conf ASC, mistake_count DESC
     """)
     topic_rows = cursor.fetchall()
 
@@ -213,6 +213,3 @@ def get_mistake_stats():
         "top_mistake_reason": top_mistake_reason,
         "weak_topics": weak_topics
     }
-
-
-
