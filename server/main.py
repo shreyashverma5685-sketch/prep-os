@@ -9,6 +9,12 @@ from recommender import (
     calculate_5factor_topic_score,
     calculate_5factor_problem_score
 )
+from scheduler import (
+    auto_schedule_problem_if_needed,
+    schedule_revision,
+    get_due_revisions,
+    complete_revision
+)
 
 app = FastAPI()
 
@@ -47,7 +53,11 @@ def create_problem(problem: ProblemCreate):
     row = cursor.fetchone()
     conn.close()
 
-    return dict(row)
+    prob_dict = dict(row)
+    # Auto-schedule spaced repetition revision if problem needs practice
+    auto_schedule_problem_if_needed(new_id, prob_dict)
+
+    return prob_dict
 
 
 @app.get("/problems", response_model=list[Problem])
@@ -313,3 +323,18 @@ def get_five_factor_weakness():
 
     topic_scores.sort(key=lambda x: x["weakness_score_5factor"], reverse=True)
     return {"topics": topic_scores}
+
+
+@app.post("/revisions/schedule/{problem_id}")
+def schedule_problem_revision(problem_id: int, interval_stage: int = 0):
+    return schedule_revision(problem_id, interval_stage)
+
+
+@app.get("/revisions/due")
+def list_due_revisions():
+    return {"revisions_due": get_due_revisions()}
+
+
+@app.post("/revisions/{revision_id}/complete")
+def complete_problem_revision(revision_id: int):
+    return complete_revision(revision_id)
