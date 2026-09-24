@@ -338,3 +338,67 @@ def list_due_revisions():
 @app.post("/revisions/{revision_id}/complete")
 def complete_problem_revision(revision_id: int):
     return complete_revision(revision_id)
+
+
+@app.get("/plan")
+def generate_daily_plan():
+    today_str = datetime.now().strftime('%Y-%m-%d')
+    due_revisions = get_due_revisions()
+    weakness_resp = get_five_factor_weakness()
+    topics = weakness_resp.get("topics", [])
+
+    todays_focus = None
+    if topics:
+        top_topic = topics[0]
+        reason_parts = []
+        if top_topic.get("avg_confidence") is not None and top_topic["avg_confidence"] < 3.5:
+            reason_parts.append(f"Low confidence rating ({top_topic['avg_confidence']}/5)")
+        if top_topic.get("mistake_count", 0) > 0:
+            reason_parts.append(f"{top_topic['mistake_count']} logged mistakes requiring review")
+        if top_topic.get("days_since_practice", 0) > 7:
+            reason_parts.append(f"{top_topic['days_since_practice']} days since last practice")
+        
+        reason = " | ".join(reason_parts) if reason_parts else "Highest calculated weakness priority"
+        
+        todays_focus = {
+            "primary_weak_topic": top_topic["topic"],
+            "weakness_score": top_topic["weakness_score_5factor"],
+            "total_problems": top_topic["total_problems"],
+            "avg_confidence": top_topic["avg_confidence"],
+            "mistake_count": top_topic["mistake_count"],
+            "reason": reason
+        }
+
+    action_plan = []
+    priority = 1
+
+    for rev in due_revisions:
+        action_plan.append({
+            "priority": priority,
+            "type": "REVISION",
+            "title": f"Revise: {rev.get('title') or ('Problem #' + str(rev['problem_id']))}",
+            "topic": rev.get("topic", "General"),
+            "problem_id": rev["problem_id"],
+            "revision_id": rev["revision_id"],
+            "action": f"Complete spaced repetition review (Stage {rev.get('interval_stage', 0)})"
+        })
+        priority += 1
+
+    for top in topics[:3]:
+        action_plan.append({
+            "priority": priority,
+            "type": "NEW_PRACTICE",
+            "title": f"Practice Focus: {top['topic']}",
+            "topic": top["topic"],
+            "action": f"Solve 2 Medium/Hard problems in {top['topic']} to reduce weakness score ({top['weakness_score_5factor']}/100)"
+        })
+        priority += 1
+
+    return {
+        "date": today_str,
+        "todays_focus": todays_focus,
+        "revisions_due_count": len(due_revisions),
+        "revisions_due": due_revisions,
+        "top_weak_topics": topics[:5],
+        "recommended_action_plan": action_plan
+    }
