@@ -146,7 +146,6 @@ def get_consistency_metrics():
             else:
                 current_streak = 0
 
-    from datetime import datetime, timedelta
     now_date = datetime.now().date()
     seven_days_ago = (now_date - timedelta(days=7)).strftime('%Y-%m-%d')
     fourteen_days_ago = (now_date - timedelta(days=14)).strftime('%Y-%m-%d')
