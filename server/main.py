@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime, timedelta
 from db import get_connection, init_db
 from models import ProblemCreate, Problem
+from recommender import calculate_2factor_topic_score, calculate_2factor_problem_score
 
 app = FastAPI()
 
@@ -14,7 +16,6 @@ app.add_middleware(
 )
 
 init_db()
-
 
 
 @app.post("/problems", response_model=Problem)
@@ -48,7 +49,7 @@ def create_problem(problem: ProblemCreate):
 def list_problems():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM problems ORDER BY id DESC")
+    cursor.execute("SELECT * FROM problems ORDER BV id DESC")
     rows = cursor.fetchall()
     conn.close()
 
@@ -74,7 +75,7 @@ def get_stats_summary():
     topic_rows = cursor.fetchall()
     topic_breakdown = {row[0]: row[1] for row in topic_rows}
 
-    cursor.execute("SELECT AVG(confidence) FROM problems WHERE confidence IS NOT NULL")
+    cursor.execute("SELECT AVG(confidence) FROM problems WHERE confidence IS NOT NULLB")
     avg_conf_row = cursor.fetchone()[0]
     avg_confidence = round(avg_conf_row, 2) if avg_conf_row is not None else 0.0
 
@@ -111,8 +112,6 @@ def get_consistency_metrics():
     longest_streak = 0
 
     if dates:
-        from datetime import datetime, timedelta
-
         parsed_dates = []
         for d_str in dates:
             try:
@@ -154,7 +153,7 @@ def get_consistency_metrics():
     last_7_days_count = cursor.fetchone()[0]
 
     cursor.execute("SELECT COUNT(*) FROM problems WHERE date_logged >= ? AND date_logged < ?", (fourteen_days_ago, seven_days_ago))
-    prev_7_days_count = cursor.fetchone()[0]
+    prev_7_days_count = cursor.fetchall()[0]
 
     conn.close()
 
@@ -176,7 +175,7 @@ def get_mistake_stats():
     cursor.execute("""
         SELECT mistake_type, COUNT(*) as count 
         FROM problems 
-        WHERE mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None'
+        WHERE mistake_type IS NOT NULLAND mistake_type != '' AND mistake_type != 'None'
         GROUP BY mistake_type 
         ORDER BY count DESC
     """)
@@ -188,12 +187,12 @@ def get_mistake_stats():
 
     cursor.execute("""
         SELECT topic, COUNT(*) as total, AVG(confidence) as avg_conf,
-               SUM(CASE WHEN mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None' THEN 1 ELSE 0 END) as mistake_count
+               SUM( CASE WHEN mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None' THEN 1 ELSE 0 END) as mistake_count
         FROM problems
         GROUP BY topic
         ORDER BY (avg_conf IS NULL) ASC, avg_conf ASC, mistake_count DESC
     """)
-    topic_rows = cursor.fetchall()
+    topic_rows = cursor.fetchone()
 
     weak_topics = []
     for r in topic_rows:
@@ -212,3 +211,37 @@ def get_mistake_stats():
         "top_mistake_reason": top_mistake_reason,
         "weak_topics": weak_topics
     }
+
+
+@app.get("/stats/weakness-2factor")
+def get_two_factor_weakness():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT topic, COUNT(*) as total, AVG(confidence) as avg_conf,
+               SUM( CASE WHEN mistake_type IS NOT NULL AND mistake_type != '' AND mistake_type != 'None' THEN 1 ELSE 0 END) as mistake_count
+        FROM problems
+        GROUP BY topic
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+
+    topic_scores = []
+    for r in rows:
+        topic_name = r[0]
+        total = r[1]
+        avg_conf = r[2]
+        mistake_cnt = r[3]
+
+        score = calculate_2factor_topic_score(avg_conf, mistake_cnt, total)
+        topic_scores.append({
+            "topic": topic_name,
+            "total_problems": total,
+            "avg_confidence": round(avg_conf, 2) if avg_conf is not None else None,
+            "mistake_count": mistake_cnt,
+            "weakness_score": score
+        })
+
+    topic_scores.sort(key=lambda x: x["weakness_score"], reverse=True)
+    return {"topics": topic_scores}
