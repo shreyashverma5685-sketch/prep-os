@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
+import FocusCard from './components/FocusCard';
 import LogForm from './components/LogForm';
 import ProblemList from './components/ProblemList';
 import StatsSummary from './components/StatsSummary';
@@ -13,22 +14,25 @@ function App() {
   const [summary, setSummary] = useState(null);
   const [consistency, setConsistency] = useState(null);
   const [mistakeStats, setMistakeStats] = useState(null);
+  const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [probRes, summaryRes, consistencyRes, mistakesRes] = await Promise.all([
+      const [probRes, summaryRes, consistencyRes, mistakesRes, planRes] = await Promise.all([
         fetch(`${API_BASE_URL}/problems`),
         fetch(`${API_BASE_URL}/stats/summary`),
         fetch(`${API_BASE_URL}/stats/consistency`),
-        fetch(`${API_BASE_URL}/stats/mistakes`)
+        fetch(`${API_BASE_URL}/stats/mistakes`),
+        fetch(`${API_BASE_URL}/plan`)
       ]);
 
       if (probRes.ok) setProblems(await probRes.json());
       if (summaryRes.ok) setSummary(await summaryRes.json());
       if (consistencyRes.ok) setConsistency(await consistencyRes.json());
       if (mistakesRes.ok) setMistakeStats(await mistakesRes.json());
+      if (planRes.ok) setPlan(await planRes.json());
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -72,12 +76,15 @@ function App() {
       </header>
 
       <main className="dashboard-layout">
+        <FocusCard plan={plan} loading={loading} />
         <div className="grid-2col">
           <StatsSummary summary={summary} loading={loading} />
           <ConsistencyCard consistency={consistency} loading={loading} />
         </div>
         <MistakeBreakdown mistakeStats={mistakeStats} loading={loading} />
-        <LogForm onProblemAdded={handleProblemAdded} />
+        <div id="log-form-section">
+          <LogForm onProblemAdded={handleProblemAdded} />
+        </div>
         <ProblemList problems={problems} loading={loading} />
       </main>
     </div>

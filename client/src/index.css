@@ -312,3 +312,98 @@ header.app-header {
   padding: 32px 16px;
   color: var(--text-muted);
 }
+
+/* Focus Card Styles */
+.focus-card {
+  background: linear-gradient(135deg, #1e1b4b 0%, #1e293b 100%);
+  border: 1px solid #4338ca;
+  position: relative;
+  overflow: hidden;
+}
+
+.focus-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.focus-badge-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.focus-badge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+.focus-date {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.weakness-score-pill {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.focus-topic-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.focus-reason {
+  font-size: 14px;
+  color: #cbd5e1;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.focus-stats-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  background: rgba(15, 23, 42, 0.4);
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.focus-stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.focus-stat-item .stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.focus-stat-item .stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.focus-btn {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  font-weight: 700;
+}
+
+.focus-btn:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+}
