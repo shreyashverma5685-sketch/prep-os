@@ -1,5 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import FocusCard from './components/FocusCard';
+import RevisionPanel from './components/RevisionPanel';
+import ActivityPanel from './components/ActivityPanel';
 import LogForm from './components/LogForm';
 import ProblemList from './components/ProblemList';
 import StatsSummary from './components/StatsSummary';
@@ -62,6 +64,21 @@ function App() {
     }
   };
 
+  const handleCompleteRevision = async (revisionId) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/revisions/${revisionId}/complete`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        await fetchData();
+      } else {
+        alert('Failed to complete revision.');
+      }
+    } catch (err) {
+      console.error('Error completing revision:', err);
+    }
+  };
+
   return (
     <div>
       <header className="app-header">
@@ -77,6 +94,14 @@ function App() {
 
       <main className="dashboard-layout">
         <FocusCard plan={plan} loading={loading} />
+        <div className="grid-2col">
+          <RevisionPanel 
+            revisions={plan?.revisions_due || []} 
+            onCompleteRevision={handleCompleteRevision} 
+            loading={loading} 
+          />
+          <ActivityPanel consistency={consistency} loading={loading} />
+        </div>
         <div className="grid-2col">
           <StatsSummary summary={summary} loading={loading} />
           <ConsistencyCard consistency={consistency} loading={loading} />
