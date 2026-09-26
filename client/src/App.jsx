@@ -18,6 +18,7 @@ function App() {
   const [mistakeStats, setMistakeStats] = useState(null);
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [formKey, setFormKey] = useState(0);
 
   const fetchData = async () => {
     try {
@@ -43,26 +44,28 @@ function App() {
   };
 
   useEffect(() => {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, []);
 
-  const handleProblemAdded = async (formData) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/problems`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      if (res.ok) {
-        await fetchData();
-      } else {
-        alert('Failed to save problem to server.');
-      }
-    } catch (err) {
-      console.error('Error adding problem:', err);
-      alert('Network error submitting problem.');
+const handleProblemAdded = async (formData) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/problems`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData)
+    });
+    if (res.ok) {
+      await fetchData();
+      setFormKey((prev) => prev + 1);
+    } else {
+      alert('Failed to save problem to server.');
     }
-  };
+  } catch (err) {
+    console.error('Error adding problem:', err);
+    alert('Network error submitting problem.');
+  }
+};
 
   const handleCompleteRevision = async (revisionId) => {
     try {
@@ -108,7 +111,7 @@ function App() {
         </div>
         <MistakeBreakdown mistakeStats={mistakeStats} loading={loading} />
         <div id="log-form-section">
-          <LogForm onProblemAdded={handleProblemAdded} />
+          <LogForm key={formKey} onProblemAdded={handleProblemAdded} />
         </div>
         <ProblemList problems={problems} loading={loading} />
       </main>

@@ -80,7 +80,7 @@ def calculate_5factor_topic_score(
 def calculate_5factor_problem_score(problem: Dict[str, Any]) -> float:
     """Calculates 5-Factor Weakness Score (0 - 100) for an individual problem."""
     conf = problem.get("confidence")
-    f1_conf = max(0.0, min(1.0, (5.0 - float(conf)) / 4.0)) if cone is not None else 0.8
+    f1_conf = max(0.0, min(1.0, (5.0 - float(conf)) / 4.0)) if conf is not None else 0.8
 
     mistake_type = problem.get("mistake_type")
     status = problem.get("status", "")
