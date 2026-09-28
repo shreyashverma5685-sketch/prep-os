@@ -3,8 +3,19 @@ Prep OS - Recommender Engine Module
 Provides weakness scoring (2-Factor & 5-Factor) and recommendation algorithms.
 """
 
-from typing import List, Dict, Any, Optional
-from datetime import datetime, date
+from typing import Dict, Any, Optional
+from datetime import datetime
+
+# What a missing confidence rating counts as, on the 0-1 weakness scale.
+# 0.5 = "unknown is neutral": no data neither boosts nor hides a weakness.
+UNKNOWN_CONFIDENCE_FACTOR = 0.5
+
+
+def _confidence_factor(confidence: Optional[float]) -> float:
+    """Converts a 1-5 confidence rating into a 0-1 weakness factor (1 = weakest)."""
+    if confidence is None:
+        return UNKNOWN_CONFIDENCE_FACTOR
+    return max(0.0, min(1.0, (5.0 - float(confidence)) / 4.0))
 
 
 def calculate_2factor_topic_score(
@@ -16,11 +27,7 @@ def calculate_2factor_topic_score(
     if total_problems == 0:
         return 0.0
 
-    if avg_confidence is not None:
-        conf_factor = max(0.0, min(1.0, (5.0 - float(avg_confidence)) / 4.0))
-    else:
-        conf_factor = 0.8
-
+    conf_factor = _confidence_factor(avg_confidence)
     mistake_factor = min(1.0, mistake_count / total_problems)
     score = (0.6 * conf_factor + 0.4 * mistake_factor) * 100.0
     return round(score, 2)
@@ -28,11 +35,7 @@ def calculate_2factor_topic_score(
 
 def calculate_2factor_problem_score(problem: Dict[str, Any]) -> float:
     """Calculates 2-Factor Weakness Score (0 - 100) for an individual problem."""
-    conf = problem.get("confidence")
-    if conf is not None:
-        conf_factor = max(0.0, min(1.0, (5.0 - float(conf)) / 4.0))
-    else:
-        conf_factor = 0.8
+    conf_factor = _confidence_factor(problem.get("confidence"))
 
     mistake_type = problem.get("mistake_type")
     status = problem.get("status", "")
@@ -62,11 +65,7 @@ def calculate_5factor_topic_score(
     if total_problems == 0:
         return 0.0
 
-    if avg_confidence is not None:
-        f1_conf = max(0.0, min(1.0, (5.0 - float(avg_confidence)) / 4.0))
-    else:
-        f1_conf = 0.8
-
+    f1_conf = _confidence_factor(avg_confidence)
     f2_mistakes = min(1.0, mistake_count / total_problems)
     f3_time = max(0.0, min(1.0, (avg_time_min - 15.0) / 45.0))
     f4_friction = max(0.0, min(1.0, (avg_attempts - 1.0) / 3.0 + (avg_hints * 0.15)))
@@ -76,11 +75,9 @@ def calculate_5factor_topic_score(
     return round(composite, 2)
 
 
-
 def calculate_5factor_problem_score(problem: Dict[str, Any]) -> float:
     """Calculates 5-Factor Weakness Score (0 - 100) for an individual problem."""
-    conf = problem.get("confidence")
-    f1_conf = max(0.0, min(1.0, (5.0 - float(conf)) / 4.0)) if conf is not None else 0.8
+    f1_conf = _confidence_factor(problem.get("confidence"))
 
     mistake_type = problem.get("mistake_type")
     status = problem.get("status", "")
