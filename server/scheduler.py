@@ -97,7 +97,12 @@ def get_due_revisions() -> List[Dict[str, Any]]:
     return result
 
 
-def complete_revision(revision_id: int) -> Dict[str, Any]:
+def complete_revision(revision_id: int, outcome: str = "success") -> Dict[str, Any]:
+    """
+    Marks a revision as done and schedules the next one.
+      outcome "success":   climb to the next interval stage (1 -> 3 -> 7 -> 14 -> 30 days).
+      outcome "struggled": reset to stage 0, so the problem comes back tomorrow.
+    """
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -110,7 +115,11 @@ def complete_revision(revision_id: int) -> Dict[str, Any]:
     rev = dict(row)
     cursor.execute("UPDATE revisions SET completed = 1 WHERE id = ?", (revision_id,))
 
-    next_stage = rev["interval_stage"] + 1
+    if outcome == "struggled":
+        next_stage = 0
+    else:
+        next_stage = rev["interval_stage"] + 1
+
     next_rev = None
     if next_stage in STAGE_INTERVALS:
         next_due = calculate_next_due_date(next_stage)
@@ -127,6 +136,7 @@ def complete_revision(revision_id: int) -> Dict[str, Any]:
 
     return {
         "completed_revision_id": revision_id,
+        "outcome": outcome,
         "status": "completed",
         "next_revision_scheduled": next_rev
     }

@@ -557,3 +557,18 @@ header.app-header {
   color: var(--accent-danger);
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
+
+
+.revision-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-danger {
+  background-color: var(--accent-danger);
+  color: #ffffff;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+}

@@ -1,16 +1,16 @@
 ﻿import React, { useState } from 'react';
 
 const RevisionPanel = ({ revisions = [], onCompleteRevision, loading }) => {
-  const [completingId, setCompletingId] = useState(null);
+  const [pending, setPending] = useState(null);
 
-  const handleComplete = async (revisionId) => {
+  const handleOutcome = async (revisionId, outcome) => {
     try {
-      setCompletingId(revisionId);
+      setPending({ id: revisionId, outcome });
       if (onCompleteRevision) {
-        await onCompleteRevision(revisionId);
+        await onCompleteRevision(revisionId, outcome);
       }
     } finally {
-      setCompletingId(null);
+      setPending(null);
     }
   };
 
@@ -36,32 +36,44 @@ const RevisionPanel = ({ revisions = [], onCompleteRevision, loading }) => {
         </div>
       ) : (
         <div className="revision-list">
-          {revisions.map((rev) => (
-            <div key={rev.revision_id} className="revision-item">
-              <div className="revision-main-info">
-                <div className="revision-title-row">
-                  <span className="revision-title">{rev.title || `Problem #${rev.problem_id}`}</span>
-                  <span className={`badge badge-${(rev.difficulty || 'medium').toLowerCase()}`}>
-                    {rev.difficulty || 'Medium'}
-                  </span>
+          {revisions.map((rev) => {
+            const isBusy = pending?.id === rev.revision_id;
+            return (
+              <div key={rev.revision_id} className="revision-item">
+                <div className="revision-main-info">
+                  <div className="revision-title-row">
+                    <span className="revision-title">{rev.title || `Problem #${rev.problem_id}`}</span>
+                    <span className={`badge badge-${(rev.difficulty || 'medium').toLowerCase()}`}>
+                      {rev.difficulty || 'Medium'}
+                    </span>
+                  </div>
+                  <div className="revision-meta-row">
+                    <span className="topic-tag">{rev.topic}</span>
+                    <span className="stage-badge">Stage {rev.interval_stage}</span>
+                    {rev.overdue_days > 0 && (
+                      <span className="overdue-badge">⚠️ {rev.overdue_days}d overdue</span>
+                    )}
+                  </div>
                 </div>
-                <div className="revision-meta-row">
-                  <span className="topic-tag">{rev.topic}</span>
-                  <span className="stage-badge">Stage {rev.interval_stage}</span>
-                  {rev.overdue_days > 0 && (
-                    <span className="overdue-badge">⚠️ {rev.overdue_days}d overdue</span>
-                  )}
+                <div className="revision-actions">
+                  <button
+                    className="btn btn-sm btn-success complete-btn"
+                    disabled={isBusy}
+                    onClick={() => handleOutcome(rev.revision_id, 'success')}
+                  >
+                    {isBusy && pending.outcome === 'success' ? 'Saving...' : '✓ Complete'}
+                  </button>
+                  <button
+                    className="btn btn-sm btn-danger struggled-btn"
+                    disabled={isBusy}
+                    onClick={() => handleOutcome(rev.revision_id, 'struggled')}
+                  >
+                    {isBusy && pending.outcome === 'struggled' ? 'Saving...' : '✗ Struggled'}
+                  </button>
                 </div>
               </div>
-              <button
-                className="btn btn-sm btn-success complete-btn"
-                disabled={completingId === rev.revision_id}
-                onClick={() => handleComplete(rev.revision_id)}
-              >
-                {completingId === rev.revision_id ? 'Completing...' : '✓ Complete'}
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
