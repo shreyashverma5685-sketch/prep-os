@@ -7,6 +7,7 @@ import ProblemList from './components/ProblemList';
 import StatsSummary from './components/StatsSummary';
 import ConsistencyCard from './components/ConsistencyCard';
 import MistakeBreakdown from './components/MistakeBreakdown';
+import TopicPerformanceChart from './components/TopicPerformanceChart';
 import './index.css';
 
 const API_BASE_URL = 'http://127.0.0.1:8000';
@@ -17,18 +18,20 @@ function App() {
   const [consistency, setConsistency] = useState(null);
   const [mistakeStats, setMistakeStats] = useState(null);
   const [plan, setPlan] = useState(null);
+  const [topicPerformance, setTopicPerformance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formKey, setFormKey] = useState(0);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [probRes, summaryRes, consistencyRes, mistakesRes, planRes] = await Promise.all([
+      const [probRes, summaryRes, consistencyRes, mistakesRes, planRes, topicPerfRes] = await Promise.all([
         fetch(`${API_BASE_URL}/problems`),
         fetch(`${API_BASE_URL}/stats/summary`),
         fetch(`${API_BASE_URL}/stats/consistency`),
         fetch(`${API_BASE_URL}/stats/mistakes`),
-        fetch(`${API_BASE_URL}/plan`)
+        fetch(`${API_BASE_URL}/plan`),
+        fetch(`${API_BASE_URL}/stats/topic-performance`)
       ]);
 
       if (probRes.ok) setProblems(await probRes.json());
@@ -36,6 +39,7 @@ function App() {
       if (consistencyRes.ok) setConsistency(await consistencyRes.json());
       if (mistakesRes.ok) setMistakeStats(await mistakesRes.json());
       if (planRes.ok) setPlan(await planRes.json());
+      if (topicPerfRes.ok) setTopicPerformance(await topicPerfRes.json());
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -110,6 +114,7 @@ const handleProblemAdded = async (formData) => {
           <ConsistencyCard consistency={consistency} loading={loading} />
         </div>
         <MistakeBreakdown mistakeStats={mistakeStats} loading={loading} />
+        <TopicPerformanceChart topics={topicPerformance?.topics || []} loading={loading} />
         <div id="log-form-section">
           <LogForm key={formKey} onProblemAdded={handleProblemAdded} />
         </div>
