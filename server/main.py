@@ -1,6 +1,7 @@
 ﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta
+from typing import Literal
 from db import get_connection, init_db
 from models import ProblemCreate, Problem
 from recommender import (
@@ -336,8 +337,8 @@ def list_due_revisions():
 
 
 @app.post("/revisions/{revision_id}/complete")
-def complete_problem_revision(revision_id: int):
-    return complete_revision(revision_id)
+def complete_problem_revision(revision_id: int, outcome: Literal["success", "struggled"] = "success"):
+    return complete_revision(revision_id, outcome)
 
 
 @app.get("/plan")

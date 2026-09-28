@@ -67,9 +67,9 @@ const handleProblemAdded = async (formData) => {
   }
 };
 
-  const handleCompleteRevision = async (revisionId) => {
+  const handleCompleteRevision = async (revisionId, outcome = 'success') => {
     try {
-      const res = await fetch(`${API_BASE_URL}/revisions/${revisionId}/complete`, {
+      const res = await fetch(`${API_BASE_URL}/revisions/${revisionId}/complete?outcome=${outcome}`, {
         method: 'POST'
       });
       if (res.ok) {
