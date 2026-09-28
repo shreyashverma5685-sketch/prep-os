@@ -616,3 +616,55 @@ header.app-header {
   font-size: 11px;
   color: var(--text-muted);
 }
+
+.history-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-group-card {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.history-group-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.history-group-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 15px;
+}
+
+.history-attempts-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.history-attempt-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.history-attempt-num {
+  color: var(--text-muted);
+}
+
+.history-attempt-time {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 14px;
+}
