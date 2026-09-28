@@ -56,6 +56,7 @@ header.app-header {
   font-weight: 800;
   background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   display: flex;
   align-items: center;
@@ -571,4 +572,47 @@ header.app-header {
 
 .btn-danger:hover {
   background-color: #dc2626;
+}
+
+.topic-perf-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.topic-perf-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.topic-perf-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.topic-perf-pct {
+  color: var(--text-secondary);
+}
+
+.topic-perf-track {
+  width: 100%;
+  height: 10px;
+  background: var(--bg-main);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.topic-perf-bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.topic-perf-sub {
+  font-size: 11px;
+  color: var(--text-muted);
 }

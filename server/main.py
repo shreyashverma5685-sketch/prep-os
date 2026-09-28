@@ -403,3 +403,33 @@ def generate_daily_plan():
         "top_weak_topics": topics[:5],
         "recommended_action_plan": action_plan
     }
+
+@app.get("/stats/topic-performance")
+def get_topic_performance():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT topic,
+               COUNT(*) as total,
+               SUM(CASE WHEN status = 'Solved' THEN 1 ELSE 0 END) as solved
+        FROM problems
+        GROUP BY topic
+        ORDER BY topic ASC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+
+    topics = []
+    for r in rows:
+        topic_name, total, solved = r[0], r[1], r[2]
+        accuracy_pct = round((solved / total) * 100.0, 1) if total > 0 else 0.0
+        topics.append({
+            "topic": topic_name,
+            "total_problems": total,
+            "solved_count": solved,
+            "accuracy_pct": accuracy_pct
+        })
+
+    topics.sort(key=lambda t: t["accuracy_pct"])
+    return {"topics": topics}
