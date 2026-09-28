@@ -42,6 +42,14 @@ class ProblemCreate(BaseModel):
             raise ValueError(f"status must be one of {ALLOWED_STATUSES}")
         return v
 
+    @field_validator("title", "platform", "subtopic")
+    @classmethod
+    def trim_optional_text(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        v = v.strip()
+        return v if v else None
+
 
 class Problem(ProblemCreate):
     id: int

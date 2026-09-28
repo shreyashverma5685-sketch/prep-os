@@ -433,3 +433,50 @@ def get_topic_performance():
 
     topics.sort(key=lambda t: t["accuracy_pct"])
     return {"topics": topics}
+
+@app.get("/problems/history-groups")
+def get_problem_history_groups():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT title, topic, id, time_taken_min, status, confidence, date_logged
+        FROM problems
+        WHERE title IS NOT NULL AND title != ''
+        ORDER BY title ASC, date_logged ASC, id ASC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+
+    grouped = {}
+    for r in rows:
+        title = r[0]
+        grouped.setdefault(title, []).append({
+            "id": r[2],
+            "topic": r[1],
+            "time_taken_min": r[3],
+            "status": r[4],
+            "confidence": r[5],
+            "date_logged": r[6],
+        })
+
+    result = []
+    for title, attempts in grouped.items():
+        if len(attempts) < 2:
+            continue
+        for i, a in enumerate(attempts, start=1):
+            a["attempt_number"] = i
+        first_time = attempts[0]["time_taken_min"]
+        latest_time = attempts[-1]["time_taken_min"]
+        result.append({
+            "title": title,
+            "topic": attempts[0]["topic"],
+            "attempt_count": len(attempts),
+            "first_attempt_time": first_time,
+            "latest_attempt_time": latest_time,
+            "improvement_min": first_time - latest_time,
+            "attempts": attempts
+        })
+
+    result.sort(key=lambda g: g["title"])
+    return {"groups": result}
