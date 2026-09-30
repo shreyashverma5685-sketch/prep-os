@@ -1,9 +1,9 @@
-export default function ConsistencyCard({ consistency = null, loading = false }) {
+﻿export default function ConsistencyCard({ consistency = null, loading = false }) {
   if (loading || !consistency) {
     return (
-      <div className="card">
+      <div className="card loading-card">
         <h2>Practice Consistency & Streaks</h2>
-        <div className="empty-state">Loading consistency metrics...</div>
+        <div className="skeleton-line" style={{ width: '100%', height: '60px', marginTop: '12px' }}></div>
       </div>
     );
   }
@@ -44,7 +44,7 @@ export default function ConsistencyCard({ consistency = null, loading = false })
 
         <div className="stat-box">
           <div className="stat-value" style={{ color: '#c084fc' }}>
-            {last_7_days_count} {velocity_trend === 'up' ? '📈' : '📉'}
+            {last_7_days_count} <span style={{ fontSize: '12px', color: '#94a3b8' }}>(vs {prev_7_days_count} prev)</span> {velocity_trend === 'up' ? '📈' : '📉'}
           </div>
           <div className="stat-label">Problems (Last 7 Days)</div>
         </div>

@@ -1,11 +1,10 @@
-﻿import React from 'react';
 
 const ActivityPanel = ({ consistency, loading }) => {
   if (loading) {
     return (
       <div className="card activity-panel loading-card">
-        <h2>📈 Practice Velocity</h2>
-        <div className="skeleton-line"></div>
+        <h2>? Practice Velocity</h2>
+        <div className="skeleton-line" style={{ width: '100%', height: '60px', marginTop: '12px' }}></div>
       </div>
     );
   }
@@ -18,17 +17,17 @@ const ActivityPanel = ({ consistency, loading }) => {
 
   return (
     <div className="card activity-panel">
-      <div className="panel-header">
-        <h2>📈 Velocity & Activity Engine</h2>
+      <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h2>?? Velocity & Activity Engine</h2>
         <span className={`trend-badge trend-${velocityTrend}`}>
-          {velocityTrend === 'up' ? '▲ Velocity Up' : '▼ Pace Slowing'}
+          {velocityTrend === 'up' ? '?? Velocity Up' : '?? Pace Steady'}
         </span>
       </div>
 
       <div className="activity-grid">
         <div className="activity-stat-box highlight-box">
           <span className="stat-label">Current Streak</span>
-          <span className="stat-value">{currentStreak} 🔥</span>
+          <span className="stat-value">{currentStreak} ??</span>
           <span className="sub-stat">Best: {longestStreak} days</span>
         </div>
 

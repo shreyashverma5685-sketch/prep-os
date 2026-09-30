@@ -1,9 +1,10 @@
+
 export default function StatsSummary({ summary = null, loading = false }) {
-  if (loading || !summary) {
+  if (loading) {
     return (
-      <div className="card">
+      <div className="card loading-card">
         <h2>Core Practice Metrics</h2>
-        <div className="empty-state">Loading core statistics...</div>
+        <div className="skeleton-line" style={{ width: '100%', height: '80px', marginTop: '12px' }}></div>
       </div>
     );
   }
@@ -12,9 +13,8 @@ export default function StatsSummary({ summary = null, loading = false }) {
     total_problems = 0,
     difficulty_breakdown = { Easy: 0, Medium: 0, Hard: 0 },
     avg_confidence = 0,
-    avg_time_min = 0,
-    status_breakdown = {}
-  } = summary;
+    avg_time_min = 0
+  } = summary || {};
 
   return (
     <div className="card">
@@ -27,28 +27,28 @@ export default function StatsSummary({ summary = null, loading = false }) {
 
         <div className="stat-box">
           <div className="stat-value" style={{ color: '#10b981' }}>
-            {difficulty_breakdown.Easy}
+            {difficulty_breakdown.Easy || 0}
           </div>
           <div className="stat-label">Easy Solved</div>
         </div>
 
         <div className="stat-box">
           <div className="stat-value" style={{ color: '#f59e0b' }}>
-            {difficulty_breakdown.Medium}
+            {difficulty_breakdown.Medium || 0}
           </div>
           <div className="stat-label">Medium Solved</div>
         </div>
 
         <div className="stat-box">
           <div className="stat-value" style={{ color: '#ef4444' }}>
-            {difficulty_breakdown.Hard}
+            {difficulty_breakdown.Hard || 0}
           </div>
           <div className="stat-label">Hard Solved</div>
         </div>
 
         <div className="stat-box">
           <div className="stat-value" style={{ color: '#c084fc' }}>
-            {avg_confidence > 0 ? `⭐ ${avg_confidence}` : 'N/A'}
+            {avg_confidence > 0 ? `? ${avg_confidence}` : 'N/A'}
           </div>
           <div className="stat-label">Avg Confidence</div>
         </div>
