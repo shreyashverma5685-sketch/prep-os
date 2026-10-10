@@ -637,3 +637,91 @@ header.app-header {
   color: var(--text-primary);
   font-size: 14px;
 }
+
+/* ---------- Log form ---------- */
+.log-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label,
+.form-section > label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.log-form input,
+.log-form select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  background: rgba(11, 15, 25, 0.8);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  color: var(--text-primary, #f1f5f9);
+  font-size: 14px;
+  font-family: inherit;
+  color-scheme: dark;
+}
+
+.log-form input:focus,
+.log-form select:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 8px 14px;
+  background: rgba(11, 15, 25, 0.8);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+  border-radius: 999px;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chip:hover {
+  border-color: #818cf8;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.chip.active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
