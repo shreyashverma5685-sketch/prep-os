@@ -1,98 +1,105 @@
+﻿import { useNavigate } from 'react-router-dom';
+import { Target, ArrowRight, Plus } from 'lucide-react';
 
 const FocusCard = ({ plan = null, loading = false }) => {
+  const navigate = useNavigate();
   const todaysFocus = plan?.todays_focus;
 
   if (loading) {
     return (
-      <div className="card focus-card loading-card">
-        <div className="focus-header">
-          <span className="focus-badge">?? TODAY'S FOCUS</span>
-        </div>
-        <div className="skeleton-line" style={{ width: '60%', height: '24px', margin: '12px 0' }}></div>
-        <div className="skeleton-line" style={{ width: '40%', height: '16px' }}></div>
+      <div className="card loading-card">
+        <div className="skeleton-line" style={{ width: '30%', height: '24px', marginBottom: '12px' }}></div>
+        <div className="skeleton-line" style={{ width: '80%', height: '16px' }}></div>
       </div>
     );
   }
 
   if (!todaysFocus) {
     return (
-      <div className="card focus-card empty-focus">
-        <div className="focus-header">
-          <div className="focus-badge-wrapper">
-            <span className="focus-badge">?? GET STARTED</span>
-            <span className="focus-date">{plan?.date || new Date().toISOString().split('T')[0]}</span>
-          </div>
+      <div className="card" style={{ padding: '32px', textAlign: 'center' }}>
+        <div style={{ display: 'inline-flex', padding: '12px', background: 'var(--accent-light)', color: 'var(--accent-primary)', borderRadius: '50%', marginBottom: '16px' }}>
+          <Target size={32} />
         </div>
-        <div className="focus-main" style={{ textAlign: 'center', padding: '16px 0' }}>
-          <h2 className="focus-topic-title" style={{ fontSize: '20px', marginBottom: '8px' }}>
-            Welcome to Prep OS
-          </h2>
-          <p className="focus-reason" style={{ maxWidth: '480px', margin: '0 auto 16px' }}>
-            Log your first practice problem to unlock personalized daily focus recommendations, multi-factor weakness scores, and intelligent spaced repetition tracking.
-          </p>
-          <button
-            className="btn btn-primary focus-btn"
-            onClick={() => {
-              const el = document.getElementById('log-form-section');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            + Log Your First Problem
-          </button>
-        </div>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '8px', justifyContent: 'center' }}>
+          Welcome to Prep OS
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', maxWidth: '500px', margin: '0 auto 20px', fontSize: '0.9rem' }}>
+          Log your first practice problem to unlock personalized daily focus recommendations, multi-factor weakness scores, and intelligent spaced repetition tracking.
+        </p>
+        <button
+          className="btn btn-primary"
+          onClick={() => navigate('/practice')}
+        >
+          <Plus size={18} />
+          Log Your First Problem
+        </button>
       </div>
     );
   }
 
   const score = todaysFocus.weakness_score || 0;
-  let scoreColor = '#10B981'; // green
-  if (score > 60) scoreColor = '#EF4444'; // red
-  else if (score > 30) scoreColor = '#F59E0B'; // yellow
+  let scoreColor = 'var(--easy-color)';
+  let scoreBg = 'var(--easy-bg)';
+  if (score > 60) {
+    scoreColor = 'var(--hard-color)';
+    scoreBg = 'var(--hard-bg)';
+  } else if (score > 30) {
+    scoreColor = 'var(--medium-color)';
+    scoreBg = 'var(--medium-bg)';
+  }
 
   return (
-    <div className="card focus-card">
-      <div className="focus-header">
-        <div className="focus-badge-wrapper">
-          <span className="focus-badge">?? TODAY'S FOCUS</span>
-          <span className="focus-date">{plan?.date || new Date().toISOString().split('T')[0]}</span>
+    <div className="card" style={{ borderLeft: '4px solid var(--accent-primary)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span className="badge" style={{ backgroundColor: 'var(--accent-light)', color: 'var(--accent-primary)', padding: '6px 12px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Target size={14} />
+            TODAY'S FOCUS
+          </span>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            {plan?.date || new Date().toISOString().split('T')[0]}
+          </span>
         </div>
-        <div className="weakness-score-pill" style={{ borderColor: scoreColor, color: scoreColor }}>
+
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '9999px', backgroundColor: scoreBg, color: scoreColor, fontWeight: 700, fontSize: '0.85rem' }}>
           Weakness Score: {score}/100
         </div>
       </div>
 
-      <div className="focus-main">
-        <h2 className="focus-topic-title">{todaysFocus.primary_weak_topic}</h2>
-        <p className="focus-reason">{todaysFocus.reason}</p>
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>
+          {todaysFocus.primary_weak_topic}
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5 }}>
+          {todaysFocus.reason}
+        </p>
+      </div>
 
-        <div className="focus-stats-row">
-          <div className="focus-stat-item">
-            <span className="stat-label">Logged Problems</span>
-            <span className="stat-value">{todaysFocus.total_problems}</span>
-          </div>
-          <div className="focus-stat-item">
-            <span className="stat-label">Avg Confidence</span>
-            <span className="stat-value">
-              {todaysFocus.avg_confidence !== null ? `? ${todaysFocus.avg_confidence} / 5` : 'N/A'}
-            </span>
-          </div>
-          <div className="focus-stat-item">
-            <span className="stat-label">Mistakes Tagged</span>
-            <span className="stat-value">{todaysFocus.mistake_count}</span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', padding: '16px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', marginBottom: '20px' }}>
+        <div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Logged Problems</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>{todaysFocus.total_problems}</div>
+        </div>
+        <div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Avg Confidence</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>
+            {todaysFocus.avg_confidence !== null && todaysFocus.avg_confidence !== undefined ? `${todaysFocus.avg_confidence}/5` : 'N/A'}
           </div>
         </div>
-
-        <div className="focus-actions">
-          <button 
-            className="btn btn-primary focus-btn"
-            onClick={() => {
-              const el = document.getElementById('log-form-section');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            Practice {todaysFocus.primary_weak_topic} Now
-          </button>
+        <div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Mistakes Tagged</div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>{todaysFocus.mistake_count}</div>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <button 
+          className="btn btn-primary"
+          onClick={() => navigate(`/practice?topic=${encodeURIComponent(todaysFocus.primary_weak_topic)}`)}
+        >
+          Practice {todaysFocus.primary_weak_topic} Now
+          <ArrowRight size={16} />
+        </button>
       </div>
     </div>
   );

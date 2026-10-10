@@ -1,17 +1,13 @@
 ﻿import { useState, useEffect } from 'react';
-import FocusCard from './components/FocusCard';
-import RevisionPanel from './components/RevisionPanel';
-import ActivityPanel from './components/ActivityPanel';
-import LogForm from './components/LogForm';
-import ProblemList from './components/ProblemList';
-import StatsSummary from './components/StatsSummary';
-import ConsistencyCard from './components/ConsistencyCard';
-import MistakeBreakdown from './components/MistakeBreakdown';
-import TopicPerformanceChart from './components/TopicPerformanceChart';
-import ProblemHistoryGroups from './components/ProblemHistoryGroups';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import AppLayout from './components/layout/AppLayout';
+import OverviewPage from './pages/OverviewPage';
+import PracticePage from './pages/PracticePage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import RevisionsPage from './pages/RevisionsPage';
+import HistoryPage from './pages/HistoryPage';
+import apiService from './services/api';
 import './index.css';
-
-const API_BASE_URL = 'http://127.0.0.1:8000';
 
 function App() {
   const [problems, setProblems] = useState([]);
@@ -27,23 +23,14 @@ function App() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [probRes, summaryRes, consistencyRes, mistakesRes, planRes, topicPerfRes, historyGroupsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/problems`),
-        fetch(`${API_BASE_URL}/stats/summary`),
-        fetch(`${API_BASE_URL}/stats/consistency`),
-        fetch(`${API_BASE_URL}/stats/mistakes`),
-        fetch(`${API_BASE_URL}/plan`),
-        fetch(`${API_BASE_URL}/stats/topic-performance`),
-        fetch(`${API_BASE_URL}/problems/history-groups`)
-      ]);
-
-      if (probRes.ok) setProblems(await probRes.json());
-      if (summaryRes.ok) setSummary(await summaryRes.json());
-      if (consistencyRes.ok) setConsistency(await consistencyRes.json());
-      if (mistakesRes.ok) setMistakeStats(await mistakesRes.json());
-      if (planRes.ok) setPlan(await planRes.json());
-      if (topicPerfRes.ok) setTopicPerformance(await topicPerfRes.json());
-      if (historyGroupsRes.ok) setHistoryGroups(await historyGroupsRes.json());
+      const data = await apiService.getAllDashboardData();
+      setProblems(data.problems);
+      setSummary(data.summary);
+      setConsistency(data.consistency);
+      setMistakeStats(data.mistakeStats);
+      setPlan(data.plan);
+      setTopicPerformance(data.topicPerformance);
+      setHistoryGroups(data.historyGroups);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
     } finally {
@@ -52,80 +39,97 @@ function App() {
   };
 
   useEffect(() => {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
   }, []);
 
-const handleProblemAdded = async (formData) => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/problems`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
-    });
-    if (res.ok) {
+  const handleProblemAdded = async (formData) => {
+    try {
+      await apiService.addProblem(formData);
       await fetchData();
       setFormKey((prev) => prev + 1);
-    } else {
+    } catch (err) {
+      console.error('Error adding problem:', err);
       alert('Failed to save problem to server.');
     }
-  } catch (err) {
-    console.error('Error adding problem:', err);
-    alert('Network error submitting problem.');
-  }
-};
+  };
 
   const handleCompleteRevision = async (revisionId, outcome = 'success') => {
     try {
-      const res = await fetch(`${API_BASE_URL}/revisions/${revisionId}/complete?outcome=${outcome}`, {
-        method: 'POST'
-      });
-      if (res.ok) {
-        await fetchData();
-      } else {
-        alert('Failed to complete revision.');
-      }
+      await apiService.completeRevision(revisionId, outcome);
+      await fetchData();
     } catch (err) {
       console.error('Error completing revision:', err);
+      alert('Failed to complete revision.');
     }
   };
 
   return (
-    <div>
-      <header className="app-header">
-        <div>
-          <div className="brand-title">
-            <span>⚡ Prep OS</span>
-          </div>
-          <div className="brand-subtitle">
-            Technical Interview Preparation & Weakness Engine
-          </div>
-        </div>
-      </header>
-
-      <main className="dashboard-layout">
-        <FocusCard plan={plan} loading={loading} />
-        <div className="grid-2col">
-          <RevisionPanel 
-            revisions={plan?.revisions_due || []} 
-            onCompleteRevision={handleCompleteRevision} 
-            loading={loading} 
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route
+            path="/"
+            element={
+              <OverviewPage
+                plan={plan}
+                loading={loading}
+                problems={problems}
+                summary={summary}
+                consistency={consistency}
+                mistakeStats={mistakeStats}
+                topicPerformance={topicPerformance}
+                historyGroups={historyGroups}
+                handleProblemAdded={handleProblemAdded}
+                handleCompleteRevision={handleCompleteRevision}
+                formKey={formKey}
+              />
+            }
           />
-          <ActivityPanel consistency={consistency} loading={loading} />
-        </div>
-        <div className="grid-2col">
-          <StatsSummary summary={summary} loading={loading} />
-          <ConsistencyCard consistency={consistency} loading={loading} />
-        </div>
-        <MistakeBreakdown mistakeStats={mistakeStats} loading={loading} />
-        <TopicPerformanceChart topics={topicPerformance?.topics || []} loading={loading} />
-        <ProblemHistoryGroups groups={historyGroups?.groups || []} loading={loading} />
-        <div id="log-form-section">
-          <LogForm key={formKey} onProblemAdded={handleProblemAdded} />
-        </div>
-        <ProblemList problems={problems} loading={loading} />
-      </main>
-    </div>
+          <Route
+            path="/practice"
+            element={
+              <PracticePage
+                onProblemAdded={handleProblemAdded}
+                problems={problems}
+                loading={loading}
+              />
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <AnalyticsPage
+                summary={summary}
+                consistency={consistency}
+                mistakeStats={mistakeStats}
+                topicPerformance={topicPerformance}
+                loading={loading}
+              />
+            }
+          />
+          <Route
+            path="/revisions"
+            element={
+              <RevisionsPage
+                plan={plan}
+                onCompleteRevision={handleCompleteRevision}
+                loading={loading}
+              />
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <HistoryPage
+                historyGroups={historyGroups}
+                problems={problems}
+                loading={loading}
+              />
+            }
+          />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
