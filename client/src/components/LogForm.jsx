@@ -1,63 +1,132 @@
-import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
+import { PenTool, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
-const TOPICS = [
+export const TOPICS = [
   'Arrays', 'Strings', 'Hash Map', 'Two Pointers', 'Sliding Window',
   'Binary Search', 'Trees', 'Graphs', 'Dynamic Programming',
   'Heap / Priority Queue', 'Stack / Queue', 'Greedy', 'Bit Manipulation', 'Other'
 ];
 
-const MISTAKE_TYPES = [
+export const MISTAKE_TYPES = [
   'None', 'Syntax', 'Off-by-one', 'Edge Case',
   'Time Limit Exceeded', 'Logic / Conceptual',
   'Memory / Space', 'Misread Spec'
 ];
 
-export default function LogForm({ onProblemAdded }) {
-  const [formData, setFormData] = useState({
+export default function LogForm({ onProblemAdded, initialTopic }) {
+  const getValidTopic = (topStr) => {
+    if (!topStr) return 'Arrays';
+    const matched = TOPICS.find((t) => t.toLowerCase() === topStr.trim().toLowerCase());
+    return matched || 'Arrays';
+  };
+
+  const getInitialState = () => ({
     title: '',
     platform: 'LeetCode',
-    topic: 'Arrays',
+    topic: getValidTopic(initialTopic),
     subtopic: '',
     difficulty: 'Medium',
     time_taken_min: 20,
     status: 'Solved',
     attempts: 1,
-    confidence: 3,
+    confidence: null, // Unrated by default
     hints_used: 0,
-    mistake_type: 'None'
+    mistake_type: null // Optional
   });
+
+  const [formData, setFormData] = useState(getInitialState);
+  const [submitting, setSubmitting] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (initialTopic) {
+      const valid = getValidTopic(initialTopic);
+      setFormData((prev) => ({ ...prev, topic: valid }));
+    }
+  }, [initialTopic]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: name === 'time_taken_min' || name === 'attempts' || name === 'hints_used'
-        ? Number(value)
+        ? (value === '' ? '' : Number(value))
         : value
     }));
   };
 
-  const handleChipSelect = (name, value) => {
+  const handleConfidenceSelect = (val) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: value
+      confidence: val
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleMistakeSelect = (val) => {
+    setFormData((prev) => ({
+      ...prev,
+      mistake_type: val === 'None' ? null : val
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.topic || !formData.difficulty || !formData.status) {
-      alert('Please fill in required fields (Topic, Difficulty, Status).');
+    setSuccessMsg('');
+    setErrorMsg('');
+
+    if (!formData.topic || !formData.difficulty || !formData.status || !formData.time_taken_min) {
+      setErrorMsg('Please fill in all required fields (Topic, Difficulty, Time Spent, Status).');
       return;
     }
-    if (onProblemAdded) {
-      onProblemAdded(formData);
+
+    try {
+      setSubmitting(true);
+      const payload = {
+        ...formData,
+        time_taken_min: Number(formData.time_taken_min) || 15,
+        attempts: Number(formData.attempts) || 1,
+        hints_used: Number(formData.hints_used) || 0,
+        title: formData.title.trim() || null,
+        subtopic: formData.subtopic.trim() || null,
+        confidence: formData.confidence !== null ? Number(formData.confidence) : null,
+        mistake_type: formData.mistake_type && formData.mistake_type !== 'None' ? formData.mistake_type : null
+      };
+
+      if (onProblemAdded) {
+        await onProblemAdded(payload);
+      }
+      setSuccessMsg('Problem attempt logged successfully!');
+      setFormData(getInitialState());
+    } catch (err) {
+      console.error('Submit error:', err);
+      setErrorMsg(err.message || 'Failed to save problem to server. Please check inputs.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div className="card form-card">
-      <h2>Log Solved / Attempted Problem</h2>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+        <PenTool size={20} style={{ color: 'var(--accent-primary)' }} />
+        <h2 style={{ margin: 0, fontSize: '1.15rem' }}>Log Practice Attempt</h2>
+      </div>
+
+      {successMsg && (
+        <div style={{ padding: '12px 16px', background: 'var(--easy-bg)', color: 'var(--easy-color)', borderRadius: 'var(--radius-sm)', marginBottom: '16px', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <CheckCircle2 size={18} />
+          {successMsg}
+        </div>
+      )}
+
+      {errorMsg && (
+        <div style={{ padding: '12px 16px', background: 'var(--hard-bg)', color: 'var(--hard-color)', borderRadius: 'var(--radius-sm)', marginBottom: '16px', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <AlertCircle size={18} />
+          {errorMsg}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="log-form">
         <div className="form-grid">
           <div className="form-group">
@@ -161,42 +230,62 @@ export default function LogForm({ onProblemAdded }) {
         </div>
 
         {/* Confidence rating tap-select chips */}
-        <div className="form-section">
-          <label>Confidence Rating (1 = Struggled, 5 = Mastered)</label>
+        <div className="form-section" style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Confidence Rating (Optional)
+          </label>
           <div className="chip-group">
+            <button
+              type="button"
+              className={`chip ${formData.confidence === null ? 'active' : ''}`}
+              onClick={() => handleConfidenceSelect(null)}
+            >
+              Unrated (N/A)
+            </button>
             {[1, 2, 3, 4, 5].map((lvl) => (
               <button
                 key={lvl}
                 type="button"
                 className={`chip ${formData.confidence === lvl ? 'active' : ''}`}
-                onClick={() => handleChipSelect('confidence', lvl)}
+                onClick={() => handleConfidenceSelect(lvl)}
               >
-                {lvl} {lvl === 1 ? '⭐ Low' : lvl === 5 ? '⭐ High' : '⭐'}
+                {lvl} {lvl === 1 ? '— Low' : lvl === 5 ? '— High' : ''}
               </button>
             ))}
           </div>
         </div>
 
         {/* Mistake type tap-select chips */}
-        <div className="form-section">
-          <label>Primary Mistake / Bottleneck</label>
+        <div className="form-section" style={{ marginBottom: '24px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+            Primary Mistake / Bottleneck (Optional)
+          </label>
           <div className="chip-group">
-            {MISTAKE_TYPES.map((type) => (
-              <button
-                key={type}
-                type="button"
-                className={`chip ${formData.mistake_type === type ? 'active' : ''}`}
-                onClick={() => handleChipSelect('mistake_type', type)}
-              >
-                {type}
-              </button>
-            ))}
+            {MISTAKE_TYPES.map((type) => {
+              const isActive = (type === 'None' && !formData.mistake_type) || formData.mistake_type === type;
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  className={`chip ${isActive ? 'active' : ''}`}
+                  onClick={() => handleMistakeSelect(type)}
+                >
+                  {type}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div className="form-actions">
-          <button type="submit" className="btn btn-primary">
-            Submit Log Entry
+        <div className="form-actions" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button type="submit" className="btn btn-primary" disabled={submitting}>
+            {submitting ? (
+              <>
+                <Loader2 size={16} className="animate-spin" /> Saving...
+              </>
+            ) : (
+              'Save Practice Log'
+            )}
           </button>
         </div>
       </form>
